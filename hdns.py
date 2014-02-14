@@ -86,7 +86,7 @@ def flatten(x):
 ###
 def validateStamp(resource=defrequester, stamp=defstamp):
   strength = stamp.split(':')[1]
-  stat = os.system('hashcash -cdb{} -r {} \'{}\''.format(strength, resource, stamp))
+  stat = os.system('hashcash -cd -b{} -r {} \'{}\''.format(strength, resource, stamp))
   return stat
 ## end validateStamp()
 
@@ -369,6 +369,11 @@ class UDP_DNSHandler(SocketServer.BaseRequestHandler):
 
 
 if __name__ == '__main__':
+  if len(sys.argv) > 1 and (sys.argv[1] == '--h' or sys.argv[1] == '--help'):
+    print "Help goes here."
+    sys.exit(0)
+  ## endif
+
 #  dprint('hdns:: dom.query. 60 IN A %s' % ip)
 
   DNS_HOST, DNS_PORT = "localhost", 5300
