@@ -367,11 +367,20 @@ class UDP_DNSHandler(SocketServer.BaseRequestHandler):
   ## end handle()
 ## end Class UDP_DNSHandler()
 
+def showhelp():
+  print("{}: hashdns demonstration server".format(sys.argv[0]))
+  print("Usage:");
+  print("  <no options currently>")
+  print("")
+  print("This server runs on port 5300, to avoid conflicts with your")
+  print("legacy DNS server, if present. To test hashdns entry submission")
+  print("to this server please use the supplied hdns_sub.py example program.")
+## end showhelp()
 
 if __name__ == '__main__':
-  if len(sys.argv) > 1 and (sys.argv[1] == '--h' or sys.argv[1] == '--help'):
-    print "Help goes here."
-    sys.exit(0)
+  if len(sys.argv) > 1 and (sys.argv[1] == '-h' or sys.argv[1] == '--help'):
+    showhelp()
+    sys.exit(1)
   ## endif
 
 #  dprint('hdns:: dom.query. 60 IN A %s' % ip)
