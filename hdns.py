@@ -103,7 +103,7 @@ def parseStamp(stamp=defstamp):
 ## end parseStamp()
 
 
-def processStamp(requester = defrequester, hashdns_stamp = defstamp):
+def processStamp(hashdns_stamp = defstamp):
   stat = 0
   urequ_uri = ''
   ureqv_uri = ''
@@ -118,6 +118,8 @@ def processStamp(requester = defrequester, hashdns_stamp = defstamp):
   ## 1. STAMP VERIFICATION
   ## Here we have received the stamp. Extract ureq(u)-URI, ureq(v)-URI and
   ## ureq-hash so we can put the two together and verify them.
+
+  requester = hashdns_stamp.split(':')[3]
 
   if validateStamp(requester, hashdns_stamp) != 0:
     dprint("Invalid update request stamp, ignoring. ({})".format(stat))
@@ -158,6 +160,9 @@ def processStamp(requester = defrequester, hashdns_stamp = defstamp):
       (host_name,op) = urequ.split(':')
       dprint("ureq op [{}]".format(op))
 
+      host_name = host_name+'.'
+
+
       ## 3. OP VERIFICATION
       ## For all ops except [transfer] ensure
       ## (a) host_addr already exists in namespace
@@ -170,7 +175,7 @@ def processStamp(requester = defrequester, hashdns_stamp = defstamp):
       ## (c) nonce_addr (pointing to ureq(v)) is distinct from host_addr (pointing to ureq(u))
       ####
 
-      dprint("Current namespace: {}".format(namespace))
+      #dprint("Current namespace: {}".format(namespace))
       if op not in {'update', 'delete', 'transfer'}:
         dprint("Invalid op [{}] specified, ignoring.".format(op))
         stat = 3
@@ -343,8 +348,10 @@ class UDP_DNSHandler(SocketServer.BaseRequestHandler):
       if prefix == 'UUp\0':  ## HashDNS capability query from client
         sock.sendto('[HashDNS v1.0:C:----]\n', self.client_address)
       elif prefix == 'UUx\0': ## HashDNS URS submission
-        stat = processStamp('requester@example.com', data[4:])
+        stat = processStamp(data[4:])
         sock.sendto('[HashDNS v1.0:S:{}]\n'.format(stat), self.client_address)
+#      elif prefix == 'UUy\0': ## DEBUG - output dump of current namespace
+#        sock.sendto('Current namespace DB: {}\n'.format(namespace), self.client_address)
       else:
         # dprint("{} wrote:".format(self.client_address[0]))
 

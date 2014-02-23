@@ -20,14 +20,29 @@
 ## -Russ Magee 2013-03-31
 ##  rmagee@gmail.com
 ##
+##
+## Tool Dependencies
+## hashcash  (debian: hashcash)
+## sha1sum   (debian: coreutils)
+##
+## Example usage
+## ./hdns_sub.py <hdns_server> <strength> <expirity-yymmdd> <email> \
+##      <ureq_u_ip> <ureq_v_ip> <urs_filestem>
+## ... where <urs_filestem> is the name of the urequ, ureqv files without the
+##     .urequ or .ureqv extensions. Eg.,
+##
+## ./hdns_sub.py localhost 24 140301 me@example.com 72.53.8.2 72.53.8.2 dom1
+##
+## ... expects files 'dom1.urequ' and 'dom1.ureqv' to be present on host
+##     72.53.8.2.
 #####
 
 import sys
 import os
 import socket
-import SocketServer
 import urllib
 import shelve
+import subprocess
 import sha
 
 defrequester = "requester@example.com"
@@ -48,6 +63,49 @@ def dprint(*v):
   print
 ##
 
+## return (op, urs)
+###################
+def buildURS(urequ_file, ureqv_file, str, expiry, requester, urequ_ip, ureqv_ip):
+  op = None
+  stat = 0
+  urlf = None
+  h = None      ## to-be SHA1 hash object
+
+  urequ_uri = 'http%3a//{}/{}'.format(urequ_ip,urequ_file)
+  ureqv_uri = 'http%3a//{}/{}'.format(ureqv_ip,ureqv_file)
+
+  # Fetch urequ,ureqv to generate hash
+  dprint("Fetching parts...")
+  urlf = urllib.urlopen( urllib.unquote(urequ_uri) )
+  urequ = urlf.read().strip()
+  urlf.close()
+  op = urequ.split(':')[1]
+
+  urlf = urllib.urlopen( urllib.unquote(ureqv_uri) )
+  ureqv = urlf.read().strip()
+  urlf.close()
+
+  h = sha.new(urequ + ureqv).hexdigest()
+
+  dprint("ureq(u) at {}:{}".format(urequ_uri, urequ))
+  dprint("ureq(v) at {}:{}".format(ureqv_uri, ureqv))
+  dprint("ureq-hash:{}".format(h))
+
+  # urequ-uri, ureqv-uri, urec-hash comprise the hashcash stamp ext field
+  ext = 'ureq(u)={};ureq(v)={};ureq-hash={}'.format(urequ_uri, ureqv_uri, h)
+  
+#  hc_sub = ["hashcash", "-m", "-b{}".format(str), "-e{}".format(expiry),
+#             "-r{}".format(resource), "-x'{}'".format(ext)]
+#
+#  proc = subprocess.Popen(hc_sub, stdout=subprocess.PIPE,
+#            shell=True)
+#  (hc_out, hc_err) = proc.communicate()
+
+  hc_out = os.popen("hashcash -m -b{} -e {} -r {} -x'{}'"\
+              .format(str, expiry, resource, ext)).read()
+
+  return (op,hc_out)
+## end buildURS()
 
 
 ## TODO
@@ -56,4 +114,31 @@ def dprint(*v):
 ## -connect to server
 ## -submit URS
 ## -confirm submission status to user, exit
+
+if __name__ == "__main__":
+  hdns_server = sys.argv[1]
+  hdns_port = 5300
+  stampStr = sys.argv[2]
+  expTime = sys.argv[3]
+  resource = sys.argv[4]
+  ureq_u_ip = sys.argv[5]
+  ureq_v_ip = sys.argv[6]
+  ureq_f = sys.argv[7]
+
+#  ureq_u_ip = '72.53.8.2'
+#  ureq_v_ip = '72.53.8.2'
+
+  [op, urs] = buildURS(ureq_f+'.urequ', ureq_f+'.ureqv',
+                      stampStr, expTime, resource, ureq_u_ip, ureq_v_ip)
+  dprint('Generated {} URS:{}'.format(op, urs))
+
+  dprint('Submitting URS...')
+  s = socket.socket(type=socket.SOCK_DGRAM)
+  s.connect((hdns_server,hdns_port))
+  s.settimeout(10)
+  s.send('{}{}'.format('UUx\0',urs))
+  print s.recv(1024)
+  s.close()
+  
+## end main()
 
