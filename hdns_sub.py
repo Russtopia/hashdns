@@ -29,9 +29,11 @@
 ## ./hdns_sub.py <hdns_server> <strength> <expirity-yymmdd> <email> \
 ##      <ureq_u_ip> <ureq_v_ip> <urs_filestem>
 ## ... where <urs_filestem> is the name of the urequ, ureqv files without the
-##     .urequ or .ureqv extensions. Eg.,
+##     .urequ or .ureqv extensions. <expiry> is given in hashcash syntax, for
+##     example '48h' for 48 hours, or '2d' for the same, etc. (see hashcash
+##     usage documentation). Eg.,
 ##
-## ./hdns_sub.py localhost 24 140301 me@example.com 72.53.8.2 72.53.8.2 dom1
+## ./hdns_sub.py localhost 24 48h me@example.com 72.53.8.2 72.53.8.2 dom1
 ##
 ## ... expects files 'dom1.urequ' and 'dom1.ureqv' to be present on host
 ##     72.53.8.2.
@@ -101,7 +103,7 @@ def buildURS(urequ_file, ureqv_file, str, expiry, requester, urequ_ip, ureqv_ip)
 #            shell=True)
 #  (hc_out, hc_err) = proc.communicate()
 
-  hc_out = os.popen("hashcash -m -b{} -e {} -r {} -x'{}'"\
+  hc_out = os.popen("hashcash -m -b{} -e {}h -r {} -x'{}'"\
               .format(str, expiry, resource, ext)).read()
 
   return (op,hc_out)
