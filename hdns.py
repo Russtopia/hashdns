@@ -206,8 +206,11 @@ def processStamp(hashdns_stamp = defstamp):
           if host_name in flat_host_list:
             if host_addr != nonce_addr:
               dprint("Transferring '{}' from {} to {}".format(host_name, host_addr, nonce_addr))
-              namespace[nonce_addr] = namespace[nonce_addr].union([host_name])
-              namespace[host_addr] = namespace[host_addr].difference([host_name])
+              if nonce_addr not in namespace:
+                namespace[nonce_addr] = set([host_name])
+              else:
+                namespace[nonce_addr] = namespace[nonce_addr].union([host_name])
+                namespace[host_addr] = namespace[host_addr].difference([host_name])
             else:
               dprint("op [transfer] must have unique dest nonce_addr. Ignoring.")
               stat = 6
